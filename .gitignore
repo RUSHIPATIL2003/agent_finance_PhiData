@@ -21,6 +21,8 @@ dist/
 build/
 .wheel/
 *.whl
+AGENTS.md
+
 
 # -----------------------------------------------------------------------------
 # Virtual Environments
@@ -207,6 +209,7 @@ build/
 # Pip / requirements
 pip-wheel-metadata/
 *.whl.metadata
+requirements.in
 
 # Cython / compiled extensions
 *.so

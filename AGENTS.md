@@ -4,9 +4,12 @@
 
 ```bash
 # Setup (first time)
-python -m venv .venv
-.venv\Scripts\activate
+python -m venv .venv            # README uses `venv`; both names work (both gitignored)
+source .venv/bin/activate       # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+
+# Verify Python version (3.14 validated; existing venv uses 3.14.6)
+python --version
 
 # Install pgvector extension (required before db init)
 # Windows: build from source or use package manager
@@ -20,7 +23,10 @@ psql -U postgres -f sql/init_database.sql
 cp .env.example .env
 # Edit .env with: POSTGRES_PASSWORD, HF_API_TOKEN, LLM_API_KEY
 
-# Ingest document (run once, or after PDF changes)
+# Full initialization (db + ingestion) - alternative to separate steps
+python main.py
+
+# Ingest document only (run once, or after PDF changes)
 python -m app.ingestion
 
 # Start app
@@ -54,6 +60,14 @@ Optional with defaults:
 - `LLM_MODEL_NAME=gpt-3.5-turbo`
 - `CHUNK_SIZE=512`, `CHUNK_OVERLAP=50`
 - `RETRIEVAL_TOP_K=5`, `RETRIEVAL_SIMILARITY_THRESHOLD=0.7`
+- `DB_POOL_MIN_CONN=2`, `DB_POOL_MAX_CONN=10`, `DB_POOL_TIMEOUT=30`
+- `CACHE_ENABLED=true`, `CACHE_TTL_SECONDS=3600`
+- `ENABLE_RERANKING=false`, `RERANKER_MODEL_NAME=cross-encoder/ms-marco-MiniLM-L-6-v2`
+- `LOG_LEVEL=INFO`, `APP_SECRET_KEY=change-me-in-production`
+- `STREAMLIT_SERVER_PORT=8501`, `STREAMLIT_SERVER_ADDRESS=0.0.0.0`
+- `DOCUMENT_PATH=Data/sample.pdf`
+
+**Note**: `LLM_BASE_URL` defaults to `https://api.openai.com/v1` but `.env.example` shows Groq (`https://api.groq.com/openai/v1`). Adjust for your provider.
 
 ## Dependency Management
 
@@ -64,12 +78,15 @@ Optional with defaults:
 
 ## Development Gotchas
 
-1. **Virtual env is `.venv`** (not `venv`) — already in `.gitignore`
+1. **Virtual env is `.venv`** (not `venv`) — already in `.gitignore` (both `venv/` and `.venv/` are ignored, so either works)
 2. **OCR requires system tesseract**: `brew install tesseract` / `apt install tesseract-ocr`
 3. **pgvector extension must exist** before `init_database.sql` runs
-4. **Document path** is `Data/sample.pdf` by default — update `DOCUMENT_PATH` in `.env` if different
-5. **Ingestion is idempotent**: SHA256 hash prevents re-embedding unchanged PDFs
-6. **Re-index**: Use `python -m app.ingestion` again, or click "Re-index Document" in Streamlit sidebar
+4. **Embedding dimension is 384** (hardcoded in `sql/init_database.sql` for `all-MiniLM-L6-v2`) — change SQL if using different model
+5. **Document path** is `Data/sample.pdf` by default — update `DOCUMENT_PATH` in `.env` if different
+6. **Ingestion is idempotent**: SHA256 hash prevents re-embedding unchanged PDFs
+7. **Re-index**: Use `python -m app.ingestion` again, or click "Re-index Document" in Streamlit sidebar
+8. **main.py** runs full init (db + ingest) — useful for CI/automation
+9. **`create_llm("anthropic")` is wired but not installable** by default — `langchain-anthropic` is not in `requirements.in`; `RAGChain` itself uses `_create_default_llm()` (OpenAI-compatible only), not `create_llm()`
 
 ## Testing
 
@@ -87,7 +104,7 @@ No test suite currently exists. If adding:
 - `app/retrievers/*` — Vector/hybrid/metadata search
 - `app/chains/*` — LangChain RAG, memory, LLM factory
 - `app/prompts/*` — All prompt templates
-- `app/models/*` — Dataclasses (Document, Chunk, Response)
+- `app/models/*` — Dataclasses (Document, Chunk, RAGResponse, IngestionResult)
 - `app/utils/*` — Logging, helpers, config utils
 - `sql/init_database.sql` — Schema, indexes, functions
 
@@ -110,7 +127,10 @@ No test suite currently exists. If adding:
 | Import errors | `pip install --force-reinstall -r requirements.txt` |
 | Memory issues | Reduce `CHUNK_SIZE`, `DB_POOL_MAX_CONN` |
 | DB connection | Check `POSTGRES_*` vars, pg running, pgvector installed |
+| Wrong embedding dim | Update `VECTOR(384)` in `sql/init_database.sql` to match model |
 
 ## Do Not Commit
 
 See `.gitignore` — notably: `.env`, `.venv/`, `__pycache__/`, `Data/*.pdf`, `extracted/`, `chunks/`, `embeddings/`, `pgdata/`, `.streamlit/secrets.toml`, `*.log`, model weights (`*.bin`, `*.safetensors`, `*.pt`).
+
+**Note**: `.gitignore` line 24 includes `AGENTS.md` — remove that line to track this file. README.md uses `venv` but project uses `.venv` (consistent with `.gitignore`).
