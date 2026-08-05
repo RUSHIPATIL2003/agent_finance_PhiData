@@ -11,6 +11,9 @@ pip install -r requirements.txt
 # Verify Python version (3.14 validated; existing venv uses 3.14.6)
 python --version
 
+# NOTE: the committed `venv/` is Windows-style (uses `Scripts/`, not `bin/`).
+# On WSL/Linux, recreate it: rm -rf venv && python -m venv venv && source venv/bin/activate
+
 # Install pgvector extension (required before db init)
 # Windows: build from source or use package manager
 # Linux: sudo apt install postgresql-16-pgvector
@@ -78,7 +81,7 @@ Optional with defaults:
 
 ## Development Gotchas
 
-1. **Virtual env is `.venv`** (not `venv`) — already in `.gitignore` (both `venv/` and `.venv/` are ignored, so either works)
+1. **Virtual env**: both `venv/` and `.venv/` are gitignored, so either name works. README uses `venv`; the committed `venv/` here is Windows-style (`Scripts/`), not Linux (`bin/`) — recreate on WSL/Linux.
 2. **OCR requires system tesseract**: `brew install tesseract` / `apt install tesseract-ocr`
 3. **pgvector extension must exist** before `init_database.sql` runs
 4. **Embedding dimension is 384** (hardcoded in `sql/init_database.sql` for `all-MiniLM-L6-v2`) — change SQL if using different model
@@ -131,6 +134,6 @@ No test suite currently exists. If adding:
 
 ## Do Not Commit
 
-See `.gitignore` — notably: `.env`, `.venv/`, `__pycache__/`, `Data/*.pdf`, `extracted/`, `chunks/`, `embeddings/`, `pgdata/`, `.streamlit/secrets.toml`, `*.log`, model weights (`*.bin`, `*.safetensors`, `*.pt`).
+See `.gitignore` — notably: `.env`, `venv/`, `.venv/`, `__pycache__/`, `Data/*.pdf`, `extracted/`, `chunks/`, `embeddings/`, `pgdata/`, `.streamlit/secrets.toml`, `*.log`, model weights (`*.bin`, `*.safetensors`, `*.pt`).
 
-**Note**: `.gitignore` line 24 includes `AGENTS.md` — remove that line to track this file. README.md uses `venv` but project uses `.venv` (consistent with `.gitignore`).
+**Note**: `.gitignore` line 24 also lists `AGENTS.md` — remove that line if you want this file tracked.

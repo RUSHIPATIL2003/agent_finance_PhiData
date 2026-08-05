@@ -1,12 +1,14 @@
 """Main entry point for the RAG application."""
 
+import logging
 import sys
 from app.config import get_settings
 from app.utils.logging import setup_logging
 from app.database import init_database, check_connection
 from app.ingestion import ingest_document
 
-logger = setup_logging()
+setup_logging()
+logger = logging.getLogger(__name__)
 
 
 def main():
