@@ -6,6 +6,7 @@ from typing import Any, Generator, Optional
 
 from psycopg import Connection, sql
 from psycopg.rows import dict_row
+from psycopg.types.json import Json
 from psycopg_pool import ConnectionPool
 
 from app.config import get_settings
@@ -86,7 +87,7 @@ class DatabasePool:
 
     def execute(self, query: str, params: Optional[tuple] = None) -> list[dict[str, Any]]:
         """Execute a query and return results."""
-        with self.connection() as conn:
+        with self.transaction() as conn:
             with conn.cursor() as cur:
                 cur.execute(query, params)
                 if cur.description:
@@ -95,7 +96,7 @@ class DatabasePool:
 
     def execute_one(self, query: str, params: Optional[tuple] = None) -> Optional[dict[str, Any]]:
         """Execute a query and return a single result."""
-        with self.connection() as conn:
+        with self.transaction() as conn:
             with conn.cursor() as cur:
                 cur.execute(query, params)
                 return cur.fetchone()
@@ -177,10 +178,10 @@ def create_document(
     return pool.execute_one(
         """
         INSERT INTO rag.documents (filename, file_hash, file_size, mime_type, page_count, metadata)
-        VALUES (%s, %s, %s, %s, %s, %s)
+        VALUES (%s, %s, %s, %s, %s, %s::jsonb)
         RETURNING *
         """,
-        (filename, file_hash, file_size, mime_type, page_count, metadata)
+        (filename, file_hash, file_size, mime_type, page_count, Json(metadata))
     )
 
 
@@ -195,9 +196,9 @@ def create_chunks_batch(chunks: list[dict[str, Any]]) -> int:
         INSERT INTO rag.chunks (
             document_id, chunk_index, content, content_type, page_number,
             section_title, heading_hierarchy, bbox, metadata, embedding
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, %s::jsonb, %s::vector)
     """
-    
+
     params_list = [
         (
             c["document_id"],
@@ -206,10 +207,10 @@ def create_chunks_batch(chunks: list[dict[str, Any]]) -> int:
             c["content_type"],
             c.get("page_number"),
             c.get("section_title"),
-            c.get("heading_hierarchy", []),
-            c.get("bbox"),
-            c.get("metadata", {}),
-            c.get("embedding"),
+            Json(c.get("heading_hierarchy", [])),
+            Json(c.get("bbox")) if c.get("bbox") is not None else None,
+            Json(c.get("metadata", {})),
+            str(c.get("embedding")),
         )
         for c in chunks
     ]
@@ -226,14 +227,14 @@ def similarity_search(
     """Perform vector similarity search."""
     pool = get_db_pool()
     
-    params = [query_embedding, match_threshold, match_count]
+    params = [str(query_embedding), match_threshold, match_count]
     if document_id:
         params.append(document_id)
     else:
         params.append(None)
     
     return pool.execute(
-        "SELECT * FROM rag.similarity_search(%s, %s, %s, %s)",
+        "SELECT * FROM rag.similarity_search(%s::vector, %s, %s, %s)",
         tuple(params)
     )
 
@@ -250,7 +251,7 @@ def hybrid_search(
     """Perform hybrid vector + keyword search."""
     pool = get_db_pool()
     
-    params = [query_embedding, query_text, match_threshold, match_count]
+    params = [str(query_embedding), query_text, match_threshold, match_count]
     if document_id:
         params.append(document_id)
     else:
@@ -258,7 +259,7 @@ def hybrid_search(
     params.extend([vector_weight, keyword_weight])
     
     return pool.execute(
-        "SELECT * FROM rag.hybrid_search(%s, %s, %s, %s, %s, %s, %s)",
+        "SELECT * FROM rag.hybrid_search(%s::vector, %s, %s, %s, %s, %s, %s)",
         tuple(params)
     )
 
@@ -275,10 +276,10 @@ def save_conversation(
     return pool.execute_one(
         """
         INSERT INTO rag.conversations (session_id, user_message, assistant_message, retrieved_chunks, metadata)
-        VALUES (%s, %s, %s, %s, %s)
+        VALUES (%s, %s, %s, %s, %s::jsonb)
         RETURNING *
         """,
-        (session_id, user_message, assistant_message, retrieved_chunks, metadata)
+        (session_id, user_message, assistant_message, retrieved_chunks, Json(metadata))
     )
 
 

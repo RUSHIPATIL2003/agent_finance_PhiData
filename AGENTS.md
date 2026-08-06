@@ -1,5 +1,5 @@
 # AGENTS.md - Multimodal RAG Chatbot
-
+<!-- opencode -s ses_02d332e44ffekZxqY5ooFrGoay -->
 ## Quick Commands
 
 ```bash

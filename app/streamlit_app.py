@@ -1,9 +1,13 @@
 """Streamlit frontend for the Multimodal RAG Chatbot."""
 
 import os
+import sys
 import uuid
 import logging
 from typing import Any
+
+# Ensure project root is on path when Streamlit changes cwd to app/
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import streamlit as st
 
