@@ -1,4 +1,4 @@
-# Multimodal RAG Chatbot
+# Multimodal RAG Chatbot 
 
 A production-ready, scalable, and memory-efficient Multimodal Retrieval-Augmented Generation (RAG) chatbot built with Python, Streamlit, PostgreSQL (pgvector), LangChain, and Hugging Face.
 
