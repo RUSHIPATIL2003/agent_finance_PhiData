@@ -1,0 +1,26 @@
+[project]
+name = "rag-agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "RUSHIPATIL2003", email = "rushipatil2501@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "duckduckgo-search>=8.1.1",
+    "fastapi>=0.141.1",
+    "groq>=1.7.0",
+    "packaging>=26.3",
+    "phidata>=2.7.10",
+    "python-dotenv>=1.2.3",
+    "uvicorn>=0.52.4",
+    "yfinance>=1.7.0",
+]
+
+[project.scripts]
+rag-agent = "rag_agent:main"
+
+[build-system]
+requires = ["uv_build>=0.12.1,<0.13.0"]
+build-backend = "uv_build"
