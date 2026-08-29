@@ -12,6 +12,7 @@ dependencies = [
     "fastapi>=0.141.1",
     "groq>=1.7.0",
     "ipykernel>=7.3.0",
+    "openai>=3.6.0",
     "packaging>=26.3",
     "phidata>=2.7.10",
     "python-dotenv>=1.2.3",
