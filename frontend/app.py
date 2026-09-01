@@ -8,7 +8,7 @@ import streamlit as st
 # Page Configuration
 st.set_page_config(
     page_title="Financial AI Agent",
-    page_icon="💹",
+    page_icon=" ",
     layout="centered",
     initial_sidebar_state="collapsed",
 )

@@ -47,7 +47,7 @@ def test_chat_endpoint_successful_query():
         "| Metric | Value |\n|---|---|\n| Current Price | $125.00 |\n| Analyst Consensus | Strong Buy |\n\n"
         "**Recent News**: NVDA expands datacenter AI chip production."
     )
-    with patch("src.rag_agent.api.run_financial_agent", return_value=(mock_response, "Gemini (gemini-2.5-flash)")):
+    with patch("src.rag_agent.api.run_financial_agent", return_value=(mock_response, "Gemini (gemini-3.5-flash-lite)")):
         response = client.post(
             "/api/chat",
             json={
@@ -60,7 +60,7 @@ def test_chat_endpoint_successful_query():
         assert data["status"] == "success"
         assert data["session_id"] == "test_session_123"
         assert "NVIDIA" in data["response"]
-        assert data["model_used"] == "Gemini (gemini-2.5-flash)"
+        assert data["model_used"] == "Gemini (gemini-3.5-flash-lite)"
 
 
 def test_chat_endpoint_agent_failure():

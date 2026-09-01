@@ -31,12 +31,12 @@ def test_chat_response_valid():
         response="# NVDA Analysis\nStrong buy consensus.",
         session_id="sess_123",
         status="success",
-        model_used="Gemini (gemini-2.5-flash)",
+        model_used="Gemini (gemini-3.5-flash-lite)",
     )
     assert res.response.startswith("# NVDA")
     assert res.session_id == "sess_123"
     assert res.status == "success"
-    assert res.model_used == "Gemini (gemini-2.5-flash)"
+    assert res.model_used == "Gemini (gemini-3.5-flash-lite)"
 
 
 def test_health_response_defaults():
@@ -46,7 +46,7 @@ def test_health_response_defaults():
         version="0.1.0",
         agent_ready=True,
         model_provider="Gemini",
-        model_id="gemini-2.5-flash",
+        model_id="gemini-3.5-flash-lite",
     )
     assert health.status == "healthy"
     assert health.agent_ready is True

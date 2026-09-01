@@ -60,7 +60,7 @@ flowchart TD
   - **Team Coordinator**: Unifies diverse tools into structured, tabular markdown reports with citations.
 - **Pure Modern Chatbot UI**: Sleek, distraction-free conversational experience with no extraneous sliders, clean dark-mode glassmorphism styling, and quick question pills.
 - **High-Performance FastAPI Backend**: Validated asynchronous REST API with health readiness probes, CORS middleware, and standardized error envelopes.
-- **Multi-Model Provider Fallback**: Seamless configuration for **Google Gemini** (`gemini-2.5-flash`), **Groq** (`llama-3.3-70b-versatile`), and **OpenAI**.
+- **Multi-Model Provider Fallback**: Seamless configuration for **Google Gemini** (`gemini-3.5-flash-lite`), **Groq** (`llama-3.3-70b-versatile`), and **OpenAI**.
 - **Automated Quality Assurance**: 100% test pass rate covering Pydantic schemas, agent initialization, and FastAPI endpoints.
 
 ---
@@ -180,7 +180,7 @@ GET /health
   "version": "0.1.0",
   "agent_ready": true,
   "model_provider": "Gemini",
-  "model_id": "Gemini (gemini-2.5-flash)"
+  "model_id": "Gemini (gemini-3.5-flash-lite)"
 }
 ```
 
@@ -203,7 +203,7 @@ Content-Type: application/json
   "response": "### NVIDIA Corporation (NVDA) Analysis\n\n| Metric | Current Value |\n|---|---|\n| Stock Price | $124.50 |\n| Analyst Consensus | Strong Buy |\n...",
   "session_id": "sess_user_01",
   "status": "success",
-  "model_used": "Gemini (gemini-2.5-flash)"
+  "model_used": "Gemini (gemini-3.5-flash-lite)"
 }
 ```
 

@@ -31,7 +31,7 @@ class Settings(BaseSettings):
 
     # Model Defaults
     default_model_provider: str = os.getenv("DEFAULT_MODEL_PROVIDER", "gemini")
-    default_gemini_model: str = os.getenv("DEFAULT_GEMINI_MODEL", "gemini-2.5-flash")
+    default_gemini_model: str = os.getenv("DEFAULT_GEMINI_MODEL", "gemini-3.5-flash-lite")
     default_groq_model: str = os.getenv("DEFAULT_GROQ_MODEL", "llama-3.3-70b-versatile")
     default_openai_model: str = os.getenv("DEFAULT_OPENAI_MODEL", "gpt-4o-mini")
 
