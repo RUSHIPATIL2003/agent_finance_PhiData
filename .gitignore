@@ -1,2 +1,17 @@
+# Environments & Secrets
 .venv/
 .env
+*.env
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+phases.md
