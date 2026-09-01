@@ -13,6 +13,14 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# Load secrets from Streamlit Cloud Secrets Manager into os.environ if present
+for key in ["GOOGLE_API_KEY", "GROQ_API_KEY", "PHI_API_KEY", "OPENAI_API_KEY", "FASTAPI_BACKEND_URL"]:
+    try:
+        if key in st.secrets and not os.getenv(key):
+            os.environ[key] = str(st.secrets[key])
+    except Exception:
+        pass
+
 # Backend URL Configuration
 BACKEND_URL = os.getenv("FASTAPI_BACKEND_URL", "http://127.0.0.1:8000")
 
@@ -32,14 +40,20 @@ load_css(css_path)
 def check_backend_health() -> tuple[bool, str]:
     """Check whether the FastAPI backend service is reachable and healthy."""
     try:
-        response = requests.get(f"{BACKEND_URL}/health", timeout=3)
+        response = requests.get(f"{BACKEND_URL}/health", timeout=2)
         if response.status_code == 200:
             data = response.json()
             model_name = data.get("model_id", "Active")
-            return True, f"Online ({model_name})"
-        return False, f"Degraded ({response.status_code})"
+            return True, f"FastAPI Online ({model_name})"
+        return False, f"FastAPI Degraded ({response.status_code})"
     except Exception:
-        return False, "Offline (FastAPI server unreachable)"
+        # Fallback to local agent engine (Streamlit Cloud / Standalone mode)
+        try:
+            from src.rag_agent.agent import create_model_instance
+            _, model_info = create_model_instance()
+            return True, f"Cloud / Local Agent ({model_info})"
+        except Exception:
+            return False, "Agent Offline (Set API Key)"
 
 
 # Initialize session state variables
@@ -55,15 +69,15 @@ with st.sidebar:
     is_healthy, health_msg = check_backend_health()
     if is_healthy:
         st.markdown(
-            f'<div class="status-pill status-online"><div class="status-dot"></div>Backend: {health_msg}</div>',
+            f'<div class="status-pill status-online"><div class="status-dot"></div>Engine: {health_msg}</div>',
             unsafe_allow_html=True,
         )
     else:
         st.markdown(
-            f'<div class="status-pill status-offline"><div class="status-dot"></div>Backend: {health_msg}</div>',
+            f'<div class="status-pill status-offline"><div class="status-dot"></div>Engine: {health_msg}</div>',
             unsafe_allow_html=True,
         )
-        st.warning(f"Make sure FastAPI is running at `{BACKEND_URL}`")
+        st.warning("Please configure your API keys (e.g. `GOOGLE_API_KEY` or `GROQ_API_KEY`)")
 
     st.markdown("---")
     st.markdown("### 💬 Chat Management")
@@ -139,14 +153,15 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 
-# Send Query to Backend
-def query_backend(prompt: str) -> str:
-    """Send user prompt to the FastAPI backend service."""
-    payload = {
-        "message": prompt,
-        "session_id": st.session_state.session_id,
-    }
+# Query Routing (FastAPI API -> Local Agent Fallback)
+def query_agent(prompt: str) -> str:
+    """Send user prompt to FastAPI backend or fallback to local agent execution."""
+    # 1. Try FastAPI Backend if running
     try:
+        payload = {
+            "message": prompt,
+            "session_id": st.session_state.session_id,
+        }
         response = requests.post(
             f"{BACKEND_URL}/api/chat",
             json=payload,
@@ -155,22 +170,16 @@ def query_backend(prompt: str) -> str:
         if response.status_code == 200:
             data = response.json()
             return data.get("response", "No response generated.")
-        else:
-            try:
-                err_data = response.json()
-                err_msg = err_data.get("detail", response.text)
-            except Exception:
-                err_msg = response.text
-            return f"⚠️ **Backend Error ({response.status_code})**: {err_msg}"
-    except requests.exceptions.ConnectionError:
-        return (
-            f"❌ **Connection Error**: Could not reach backend server at `{BACKEND_URL}`.\n\n"
-            "Please ensure the FastAPI backend is running (`uvicorn src.rag_agent.api:app --reload --port 8000`)."
-        )
-    except requests.exceptions.Timeout:
-        return "⏳ **Timeout Error**: The agent took too long to complete the market search and analysis. Please try again."
+    except Exception:
+        pass
+
+    # 2. Direct In-Process Execution (Streamlit Cloud & Standalone fallback)
+    try:
+        from src.rag_agent.agent import run_financial_agent
+        agent_response, _ = run_financial_agent(prompt)
+        return agent_response
     except Exception as e:
-        return f"⚠️ **Unexpected Error**: {str(e)}"
+        return f"⚠️ **Agent Execution Error**: {str(e)}"
 
 
 # Handle Starter Prompt Trigger
@@ -194,7 +203,7 @@ if prompt_to_send:
     # Generate assistant response
     with st.chat_message("assistant", avatar="💹"):
         with st.spinner("🤖 Coordinating Web Search and Financial Analytics agents..."):
-            agent_response = query_backend(prompt_to_send)
+            agent_response = query_agent(prompt_to_send)
             st.markdown(agent_response)
 
     # Store assistant response in history
