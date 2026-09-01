@@ -1,14 +1,21 @@
-"""Modern Financial AI Chatbot Streamlit Application."""
+"""High-Performance Financial AI Chatbot Streamlit Application."""
 
 import os
+import sys
 import uuid
+from pathlib import Path
 import requests
 import streamlit as st
+
+# Ensure project root directory is always on sys.path
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
 # Page Configuration
 st.set_page_config(
     page_title="Financial AI Agent",
-    page_icon=" ",
+    page_icon="💹",
     layout="centered",
     initial_sidebar_state="collapsed",
 )
@@ -37,23 +44,25 @@ css_path = os.path.join(os.path.dirname(__file__), "styles.css")
 load_css(css_path)
 
 
+@st.cache_data(ttl=15, show_spinner=False)
 def check_backend_health() -> tuple[bool, str]:
-    """Check whether the FastAPI backend service is reachable and healthy."""
+    """Check whether the FastAPI backend service or local agent is healthy with minimal latency."""
     try:
-        response = requests.get(f"{BACKEND_URL}/health", timeout=2)
+        response = requests.get(f"{BACKEND_URL}/health", timeout=0.8)
         if response.status_code == 200:
             data = response.json()
             model_name = data.get("model_id", "Active")
             return True, f"FastAPI Online ({model_name})"
-        return False, f"FastAPI Degraded ({response.status_code})"
     except Exception:
-        # Fallback to local agent engine (Streamlit Cloud / Standalone mode)
-        try:
-            from src.rag_agent.agent import create_model_instance
-            _, model_info = create_model_instance()
-            return True, f"Cloud / Local Agent ({model_info})"
-        except Exception:
-            return False, "Agent Offline (Set API Key)"
+        pass
+
+    # Direct in-process check
+    try:
+        from src.rag_agent.agent import create_model_instance
+        _, model_info = create_model_instance()
+        return True, f"High-Speed Engine ({model_info})"
+    except Exception:
+        return False, "Agent Offline (Set API Key)"
 
 
 # Initialize session state variables
@@ -77,7 +86,7 @@ with st.sidebar:
             f'<div class="status-pill status-offline"><div class="status-dot"></div>Engine: {health_msg}</div>',
             unsafe_allow_html=True,
         )
-        st.warning("Please configure your API keys (e.g. `GOOGLE_API_KEY` or `GROQ_API_KEY`)")
+        st.warning("Please configure your API keys in `.env` (e.g. `GOOGLE_API_KEY` or `GROQ_API_KEY`)")
 
     st.markdown("---")
     st.markdown("### 💬 Chat Management")
@@ -87,7 +96,7 @@ with st.sidebar:
         st.rerun()
 
     st.markdown("---")
-    st.caption("Phase 1: Multi-Agent Financial Assistant")
+    st.caption("Phase 1: High-Speed Financial Assistant")
     st.caption("Powered by PhiData, DuckDuckGo & YFinance")
 
 # Main Header & Hero
@@ -145,7 +154,7 @@ if not st.session_state.messages:
                 "What is the latest market news and analyst sentiment regarding the semiconductor sector?"
             )
 
-# Render Chat History
+# Render Existing Chat History
 for message in st.session_state.messages:
     role = message["role"]
     avatar = "👤" if role == "user" else "💹"
@@ -153,33 +162,17 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 
-# Query Routing (FastAPI API -> Local Agent Fallback)
-def query_agent(prompt: str) -> str:
-    """Send user prompt to FastAPI backend or fallback to local agent execution."""
-    # 1. Try FastAPI Backend if running
+def stream_agent_response(prompt: str):
+    """Stream response tokens dynamically for immediate visual feedback."""
     try:
-        payload = {
-            "message": prompt,
-            "session_id": st.session_state.session_id,
-        }
-        response = requests.post(
-            f"{BACKEND_URL}/api/chat",
-            json=payload,
-            timeout=120,
-        )
-        if response.status_code == 200:
-            data = response.json()
-            return data.get("response", "No response generated.")
+        from src.rag_agent.agent import run_financial_agent_stream
+        for chunk in run_financial_agent_stream(prompt):
+            yield chunk
     except Exception:
-        pass
-
-    # 2. Direct In-Process Execution (Streamlit Cloud & Standalone fallback)
-    try:
+        # Fallback to standard execution if streaming encounters an error
         from src.rag_agent.agent import run_financial_agent
-        agent_response, _ = run_financial_agent(prompt)
-        return agent_response
-    except Exception as e:
-        return f"⚠️ **Agent Execution Error**: {str(e)}"
+        full_text, _ = run_financial_agent(prompt)
+        yield full_text
 
 
 # Handle Starter Prompt Trigger
@@ -193,19 +186,17 @@ user_input = st.chat_input("Ask about stock fundamentals, analyst ratings, finan
 if user_input:
     prompt_to_send = user_input
 
-# Process Message Submission
+# Process Message Submission with Real-Time Streaming
 if prompt_to_send:
-    # Append user message
+    # 1. Append and render user message immediately
     st.session_state.messages.append({"role": "user", "content": prompt_to_send})
     with st.chat_message("user", avatar="👤"):
         st.markdown(prompt_to_send)
 
-    # Generate assistant response
+    # 2. Stream assistant response in real-time
     with st.chat_message("assistant", avatar="💹"):
-        with st.spinner("🤖 Coordinating Web Search and Financial Analytics agents..."):
-            agent_response = query_agent(prompt_to_send)
-            st.markdown(agent_response)
+        response_generator = stream_agent_response(prompt_to_send)
+        complete_response = st.write_stream(response_generator)
 
-    # Store assistant response in history
-    st.session_state.messages.append({"role": "assistant", "content": agent_response})
-    st.rerun()
+    # 3. Store full assistant response in history
+    st.session_state.messages.append({"role": "assistant", "content": complete_response})
