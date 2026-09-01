@@ -5,4 +5,4 @@ packaging
 phidata
 python-dotenv
 uvicorn
-yfinance
+yfinanc

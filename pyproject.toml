@@ -10,8 +10,10 @@ requires-python = ">=3.14"
 dependencies = [
     "duckduckgo-search>=8.1.1",
     "fastapi>=0.141.1",
+    "google-generativeai>=0.8.6",
     "groq>=1.7.0",
     "ipykernel>=7.3.0",
+    "ipywidgets>=8.1.9",
     "openai>=3.6.0",
     "packaging>=26.3",
     "phidata>=2.7.10",
