@@ -1,4 +1,4 @@
-"""High-Performance Multi-Agent Financial System using PhiData, DuckDuckGo, and YFinance."""
+"""High-Performance Multi-Agent Financial System with Global Rate Coordination."""
 
 import logging
 from functools import lru_cache
@@ -8,6 +8,7 @@ from phi.tools.duckduckgo import DuckDuckGo
 from phi.tools.yfinance import YFinanceTools
 
 from src.rag_agent.config import get_settings
+from src.rag_agent.rate_limiter import rate_coordinator, execute_with_rate_limit
 
 logger = logging.getLogger(__name__)
 
@@ -169,20 +170,28 @@ def run_financial_agent(
     provider: Optional[str] = None,
     model_id: Optional[str] = None,
 ) -> Tuple[str, str]:
-    """Execute a query with optimized speed.
+    """Execute a query under global rate limits and token budgeting.
 
     Returns:
         Tuple[str, str]: (response_content, model_info)
     """
     agent, model_info = get_fast_financial_agent(provider=provider, model_id=model_id)
-    result = agent.run(query)
 
-    if hasattr(result, "content") and result.content:
-        return str(result.content), model_info
-    elif isinstance(result, str):
-        return result, model_info
-    else:
-        return str(result), model_info
+    def _execute():
+        result = agent.run(query)
+        if hasattr(result, "content") and result.content:
+            return str(result.content)
+        elif isinstance(result, str):
+            return result
+        else:
+            return str(result)
+
+    response_text = execute_with_rate_limit(
+        agent_name="FinancialAgent",
+        target_func=_execute,
+        estimated_tokens=max(len(query) // 4, 500),
+    )
+    return response_text, model_info
 
 
 def run_financial_agent_stream(
@@ -190,12 +199,23 @@ def run_financial_agent_stream(
     provider: Optional[str] = None,
     model_id: Optional[str] = None,
 ) -> Generator[str, None, None]:
-    """Stream response tokens in real time with minimal latency."""
+    """Stream response tokens with rate coordination permission and token budgeting."""
+    rate_coordinator.acquire_permission_sync(
+        agent_name="FinancialStreamAgent",
+        estimated_tokens=max(len(query) // 4, 500),
+    )
     agent, _ = get_fast_financial_agent(provider=provider, model_id=model_id)
     stream_response = agent.run(query, stream=True)
 
+    accumulated_chars = 0
     for chunk in stream_response:
         if hasattr(chunk, "content") and chunk.content:
-            yield str(chunk.content)
+            text = str(chunk.content)
+            accumulated_chars += len(text)
+            yield text
         elif isinstance(chunk, str) and chunk:
+            accumulated_chars += len(chunk)
             yield chunk
+
+    # Record token usage into rolling 60-second window
+    rate_coordinator.record_token_usage(accumulated_chars // 4 + 500)
