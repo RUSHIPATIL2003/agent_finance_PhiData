@@ -167,7 +167,8 @@ def stream_agent_response(prompt: str):
     try:
         from src.rag_agent.agent import run_financial_agent_stream
         for chunk in run_financial_agent_stream(prompt):
-            yield chunk
+            if chunk:
+                yield chunk
     except Exception:
         # Fallback to standard execution if streaming encounters an error
         from src.rag_agent.agent import run_financial_agent
@@ -186,17 +187,39 @@ user_input = st.chat_input("Ask about stock fundamentals, analyst ratings, finan
 if user_input:
     prompt_to_send = user_input
 
-# Process Message Submission with Real-Time Streaming
+# Process Message Submission with Animated Thinking State & Real-Time Streaming
 if prompt_to_send:
     # 1. Append and render user message immediately
     st.session_state.messages.append({"role": "user", "content": prompt_to_send})
     with st.chat_message("user", avatar="👤"):
         st.markdown(prompt_to_send)
 
-    # 2. Stream assistant response in real-time
+    # 2. Render assistant message with 3 animated blinking dots thinking indicator
     with st.chat_message("assistant", avatar="💹"):
-        response_generator = stream_agent_response(prompt_to_send)
-        complete_response = st.write_stream(response_generator)
+        placeholder = st.empty()
+        placeholder.markdown(
+            """
+            <div class="thinking-container">
+                <span class="thinking-text">Thinking</span>
+                <div class="thinking-dots">
+                    <span class="thinking-dot"></span>
+                    <span class="thinking-dot"></span>
+                    <span class="thinking-dot"></span>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        def stream_with_thinking_cleanup(prompt: str):
+            first_chunk = True
+            for chunk in stream_agent_response(prompt):
+                if first_chunk:
+                    placeholder.empty()
+                    first_chunk = False
+                yield chunk
+
+        complete_response = st.write_stream(stream_with_thinking_cleanup(prompt_to_send))
 
     # 3. Store full assistant response in history
     st.session_state.messages.append({"role": "assistant", "content": complete_response})
