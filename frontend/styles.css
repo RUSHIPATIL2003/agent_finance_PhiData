@@ -20,6 +20,44 @@
     --radius-lg: 20px;
     --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.15);
     --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+
+    /* Dynamic Chatbox Container Variables (Dark Mode Default) */
+    --chatbox-bg: rgba(30, 41, 59, 0.50);
+    --chatbox-bg-hover: rgba(30, 41, 59, 0.70);
+    --chatbox-border: rgba(148, 163, 184, 0.20);
+    --chatbox-border-hover: rgba(56, 189, 248, 0.50);
+    --chatbox-border-focus: #0284c7;
+    --chatbox-text: #f8fafc;
+    --chatbox-placeholder: #94a3b8;
+    --chatbox-glow: rgba(56, 189, 248, 0.20);
+    --chatbox-radius: 14px;
+}
+
+/* Light Mode Overrides for Theme Toggle Compatibility */
+[data-theme="light"],
+[data-base="light"],
+.stApp[data-theme="light"] {
+    --chatbox-bg: rgba(255, 255, 255, 0.50);
+    --chatbox-bg-hover: rgba(255, 255, 255, 0.75);
+    --chatbox-border: rgba(203, 213, 225, 0.70);
+    --chatbox-border-hover: rgba(2, 132, 199, 0.50);
+    --chatbox-border-focus: #0284c7;
+    --chatbox-text: #0f172a;
+    --chatbox-placeholder: #64748b;
+    --chatbox-glow: rgba(2, 132, 199, 0.15);
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --chatbox-bg: rgba(255, 255, 255, 0.50);
+        --chatbox-bg-hover: rgba(255, 255, 255, 0.75);
+        --chatbox-border: rgba(203, 213, 225, 0.70);
+        --chatbox-border-hover: rgba(2, 132, 199, 0.50);
+        --chatbox-border-focus: #0284c7;
+        --chatbox-text: #0f172a;
+        --chatbox-placeholder: #64748b;
+        --chatbox-glow: rgba(2, 132, 199, 0.15);
+    }
 }
 
 /* Global Font & Smooth Scrolling */
@@ -61,6 +99,7 @@ html, body, [class*="css"] {
     font-weight: 700;
     background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     margin: 0;
     line-height: 1.2;
@@ -255,15 +294,77 @@ code {
     box-shadow: 0 0 8px currentColor;
 }
 
-/* Streamlit Input Area Polish */
-[data-testid="stChatInput"] {
-    border-radius: var(--radius-lg) !important;
+/* ==============================================================================
+   Refactored Chatbox Container (50% Transparency, Smooth Borders, Exclusively Container Hover)
+   ============================================================================== */
+
+/* Bottom Fixed Wrapper */
+[data-testid="stBottom"] {
+    background: transparent !important;
 }
 
+[data-testid="stBottom"] > div {
+    background: transparent !important;
+}
+
+/* Chatbox Outer Container */
+[data-testid="stChatInput"] {
+    background: var(--chatbox-bg) !important;
+    border: 1px solid var(--chatbox-border) !important;
+    border-radius: var(--chatbox-radius) !important;
+    box-shadow: var(--shadow-soft) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    overflow: hidden !important;
+}
+
+/* Hover Effect - Exclusively on the Chatbox Container */
+[data-testid="stChatInput"]:hover {
+    background: var(--chatbox-bg-hover) !important;
+    border-color: var(--chatbox-border-hover) !important;
+    box-shadow: 0 4px 20px var(--chatbox-glow) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Focused / Active State */
+[data-testid="stChatInput"]:focus-within {
+    border-color: var(--chatbox-border-focus) !important;
+    box-shadow: 0 0 0 1.5px var(--chatbox-border-focus), 0 4px 20px var(--chatbox-glow) !important;
+}
+
+/* Textarea Input - Sharp Contrast & Crystal-Clear Readability */
 [data-testid="stChatInput"] textarea {
-    font-family: 'Inter', sans-serif !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
     font-size: 0.95rem !important;
-    color: #f8fafc !important;
+    font-weight: 400 !important;
+    color: var(--chatbox-text) !important;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    line-height: 1.45 !important;
+    padding: 0.5rem 0.25rem !important;
+}
+
+[data-testid="stChatInput"] textarea::placeholder {
+    color: var(--chatbox-placeholder) !important;
+    opacity: 0.85 !important;
+}
+
+/* Send Button */
+[data-testid="stChatInput"] button {
+    background: transparent !important;
+    color: var(--primary) !important;
+    border: none !important;
+    transition: transform 0.2s ease, color 0.2s ease !important;
+}
+
+[data-testid="stChatInput"] button:hover {
+    color: #38bdf8 !important;
+    transform: scale(1.08) !important;
 }
 
 /* Hide Streamlit Default Header and Footer clutter */
