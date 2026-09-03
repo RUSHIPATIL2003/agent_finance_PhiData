@@ -6,6 +6,12 @@
 [![PhiData](https://img.shields.io/badge/PhiData-2.7+-orange.svg)](https://phidata.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+## 🔗 Live interaction
+
+Try the live assistant on Streamlit:
+
+[Financial AI Multi-Agent Assistant Web App](https://agentfinancephidata.streamlit.app/)
+
 An enterprise-ready, autonomous **Financial Intelligence Multi-Agent System** that synthesizes real-time market data, analyst recommendations, company fundamentals, and web news into structured tabular reports and actionable insights.
 
 Built on top of the exploratory prototype in [`financial_agent.ipynb`](financial_agent.ipynb), this Phase-1 release features a decoupled **FastAPI** backend service and a **modern, minimalist Streamlit chatbot** interface.
