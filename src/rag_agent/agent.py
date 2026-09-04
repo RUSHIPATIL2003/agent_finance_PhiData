@@ -2,13 +2,14 @@
 
 import logging
 from functools import lru_cache
-from typing import Generator, Optional, Tuple, Union
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 from phi.agent import Agent
 from phi.tools.duckduckgo import DuckDuckGo
 from phi.tools.yfinance import YFinanceTools
 
 from src.rag_agent.config import get_settings
 from src.rag_agent.rate_limiter import rate_coordinator, execute_with_rate_limit
+from src.rag_agent.memory import RedisChatMemory
 
 logger = logging.getLogger(__name__)
 
@@ -169,16 +170,24 @@ def run_financial_agent(
     query: str,
     provider: Optional[str] = None,
     model_id: Optional[str] = None,
+    history: Optional[List[Dict[str, Any]]] = None,
 ) -> Tuple[str, str]:
     """Execute a query under global rate limits and token budgeting.
+
+    Args:
+        query: The current user query or prompt.
+        provider: Optional LLM provider override.
+        model_id: Optional model ID override.
+        history: Optional previous conversation messages from episodic memory.
 
     Returns:
         Tuple[str, str]: (response_content, model_info)
     """
     agent, model_info = get_fast_financial_agent(provider=provider, model_id=model_id)
+    effective_query = RedisChatMemory.format_history_context(history, query) if history else query
 
     def _execute():
-        result = agent.run(query)
+        result = agent.run(effective_query)
         if hasattr(result, "content") and result.content:
             return str(result.content)
         elif isinstance(result, str):
@@ -189,7 +198,7 @@ def run_financial_agent(
     response_text = execute_with_rate_limit(
         agent_name="FinancialAgent",
         target_func=_execute,
-        estimated_tokens=max(len(query) // 4, 500),
+        estimated_tokens=max(len(effective_query) // 4, 500),
     )
     return response_text, model_info
 
@@ -198,14 +207,17 @@ def run_financial_agent_stream(
     query: str,
     provider: Optional[str] = None,
     model_id: Optional[str] = None,
+    history: Optional[List[Dict[str, Any]]] = None,
 ) -> Generator[str, None, None]:
-    """Stream response tokens with rate coordination permission and token budgeting."""
+    """Stream response tokens with rate coordination permission, token budgeting, and memory context."""
+    effective_query = RedisChatMemory.format_history_context(history, query) if history else query
+
     rate_coordinator.acquire_permission_sync(
         agent_name="FinancialStreamAgent",
-        estimated_tokens=max(len(query) // 4, 500),
+        estimated_tokens=max(len(effective_query) // 4, 500),
     )
     agent, _ = get_fast_financial_agent(provider=provider, model_id=model_id)
-    stream_response = agent.run(query, stream=True)
+    stream_response = agent.run(effective_query, stream=True)
 
     accumulated_chars = 0
     for chunk in stream_response:

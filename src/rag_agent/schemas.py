@@ -1,6 +1,6 @@
 """Pydantic schemas and request/response validation models."""
 
-from typing import Optional
+from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -41,6 +41,32 @@ class ChatResponse(BaseModel):
     )
 
 
+class ChatMessage(BaseModel):
+    """Single chat turn message in episodic memory."""
+
+    role: str = Field(..., description="Message author role ('user' or 'assistant').")
+    content: str = Field(..., description="Message text content.")
+    timestamp: Optional[float] = Field(default=None, description="Unix timestamp of message creation.")
+
+
+class ChatHistoryResponse(BaseModel):
+    """Response containing conversation history for a session."""
+
+    session_id: str = Field(..., description="Session identifier.")
+    messages: List[ChatMessage] = Field(default_factory=list, description="Ordered list of historical messages.")
+    total_messages: int = Field(default=0, description="Total number of messages in session cache.")
+    status: str = Field(default="success", description="Status indicator.")
+
+
+class SessionClearResponse(BaseModel):
+    """Response after clearing conversation memory."""
+
+    session_id: str = Field(..., description="Session identifier.")
+    cleared: bool = Field(..., description="Whether the session memory was successfully cleared.")
+    message: str = Field(..., description="Status message description.")
+    status: str = Field(default="success", description="Status indicator.")
+
+
 class HealthResponse(BaseModel):
     """System health and readiness status."""
 
@@ -49,6 +75,8 @@ class HealthResponse(BaseModel):
     agent_ready: bool = Field(default=True, description="Whether the multi-agent system is initialized.")
     model_provider: str = Field(default="unknown", description="Active LLM provider.")
     model_id: str = Field(default="unknown", description="Active model identifier.")
+    redis_connected: Optional[bool] = Field(default=None, description="Redis episodic memory connection status.")
+    redis_status: Optional[str] = Field(default=None, description="Redis episodic memory status details.")
 
 
 class ErrorResponse(BaseModel):

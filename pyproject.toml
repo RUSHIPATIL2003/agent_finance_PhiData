@@ -20,6 +20,7 @@ dependencies = [
     "phidata>=2.7.10",
     "pytest>=8.0.0",
     "python-dotenv>=1.2.3",
+    "redis>=5.0.0",
     "streamlit>=1.38.0",
     "uvicorn>=0.30.0",
     "yfinance>=1.7.0",

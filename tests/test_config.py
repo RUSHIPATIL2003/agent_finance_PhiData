@@ -17,3 +17,12 @@ def test_default_models():
     settings = get_settings()
     assert settings.default_gemini_model != ""
     assert settings.default_groq_model != ""
+
+
+def test_redis_settings():
+    """Verify Redis episodic memory default configuration."""
+    settings = get_settings()
+    assert settings.redis_url.startswith("redis://")
+    assert settings.redis_chat_ttl_seconds == 3600
+    assert settings.redis_max_connections > 0
+    assert settings.redis_max_history_turns > 0

@@ -35,6 +35,18 @@ class Settings(BaseSettings):
     default_groq_model: str = os.getenv("DEFAULT_GROQ_MODEL", "llama-3.3-70b-versatile")
     default_openai_model: str = os.getenv("DEFAULT_OPENAI_MODEL", "gpt-4o-mini")
 
+    # Redis Episodic Memory Settings
+    redis_url: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    redis_host: str = os.getenv("REDIS_HOST", "localhost")
+    redis_port: int = int(os.getenv("REDIS_PORT", "6379"))
+    redis_password: Optional[str] = os.getenv("REDIS_PASSWORD", None)
+    redis_db: int = int(os.getenv("REDIS_DB", "0"))
+    redis_chat_ttl_seconds: int = int(os.getenv("REDIS_CHAT_TTL_SECONDS", "3600"))
+    redis_max_connections: int = int(os.getenv("REDIS_MAX_CONNECTIONS", "20"))
+    redis_socket_timeout: float = float(os.getenv("REDIS_SOCKET_TIMEOUT", "2.0"))
+    redis_socket_connect_timeout: float = float(os.getenv("REDIS_SOCKET_CONNECT_TIMEOUT", "2.0"))
+    redis_max_history_turns: int = int(os.getenv("REDIS_MAX_HISTORY_TURNS", "10"))
+
 
 @lru_cache()
 def get_settings() -> Settings:

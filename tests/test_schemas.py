@@ -2,7 +2,15 @@
 
 import pytest
 from pydantic import ValidationError
-from src.rag_agent.schemas import ChatRequest, ChatResponse, HealthResponse, ErrorResponse
+from src.rag_agent.schemas import (
+    ChatMessage,
+    ChatHistoryResponse,
+    ChatRequest,
+    ChatResponse,
+    HealthResponse,
+    ErrorResponse,
+    SessionClearResponse,
+)
 
 
 def test_chat_request_valid():
@@ -39,18 +47,56 @@ def test_chat_response_valid():
     assert res.model_used == "Gemini (gemini-3.5-flash-lite)"
 
 
+def test_chat_message_schema():
+    """Verify ChatMessage schema parsing."""
+    msg = ChatMessage(role="user", content="Hello", timestamp=1234567890.0)
+    assert msg.role == "user"
+    assert msg.content == "Hello"
+    assert msg.timestamp == 1234567890.0
+
+
+def test_chat_history_response():
+    """Verify ChatHistoryResponse schema."""
+    history = ChatHistoryResponse(
+        session_id="sess_abc",
+        messages=[
+            ChatMessage(role="user", content="Query"),
+            ChatMessage(role="assistant", content="Answer"),
+        ],
+        total_messages=2,
+    )
+    assert history.session_id == "sess_abc"
+    assert len(history.messages) == 2
+    assert history.total_messages == 2
+
+
+def test_session_clear_response():
+    """Verify SessionClearResponse schema."""
+    res = SessionClearResponse(
+        session_id="sess_xyz",
+        cleared=True,
+        message="Purged successfully",
+    )
+    assert res.cleared is True
+    assert res.session_id == "sess_xyz"
+
+
 def test_health_response_defaults():
-    """Verify HealthResponse default values."""
+    """Verify HealthResponse default values and optional redis fields."""
     health = HealthResponse(
         status="healthy",
         version="0.1.0",
         agent_ready=True,
         model_provider="Gemini",
         model_id="gemini-3.5-flash-lite",
+        redis_connected=True,
+        redis_status="connected",
     )
     assert health.status == "healthy"
     assert health.agent_ready is True
     assert health.version == "0.1.0"
+    assert health.redis_connected is True
+    assert health.redis_status == "connected"
 
 
 def test_error_response():
